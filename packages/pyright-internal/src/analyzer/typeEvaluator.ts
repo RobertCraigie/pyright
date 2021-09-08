@@ -4811,6 +4811,17 @@ export function createTypeEvaluator(
                     if (isUnbound(type)) {
                         type = UnknownType.create();
                     }
+
+                    if (symbol.isExternallyHidden()) {
+                        addDiagnostic(
+                            getFileInfo(node).diagnosticRuleSet.reportGeneralTypeIssues,
+                            DiagnosticRule.reportGeneralTypeIssues,
+                            Localizer.Diagnostic.privateModuleMember().format({
+                                name: memberName,
+                            }),
+                            node.memberName
+                        );
+                    }
                 } else {
                     // Does the module export a top-level __getattr__ function?
                     if (usage.method === 'get') {

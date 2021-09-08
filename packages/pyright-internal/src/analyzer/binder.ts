@@ -255,7 +255,9 @@ export class Binder extends ParseTreeWalker {
         this._potentialPrivateSymbols.forEach((symbol, name) => {
             // If this symbol was found in the dunder all, don't mark it
             // as externally hidden.
-            if (!this._dunderAllNames?.some((sym) => sym === name)) {
+            const isInDunderAll = this._dunderAllNames?.some((sym) => sym === name);
+            const isTypedStubSymbol = this._fileInfo.isStubFile && symbol.getTypedDeclarations().length > 0;
+            if (!isInDunderAll && !isTypedStubSymbol) {
                 symbol.setIsExternallyHidden();
             }
         });
@@ -2953,7 +2955,13 @@ export class Binder extends ParseTreeWalker {
                 }
 
                 if (isPrivateOrProtectedName(name)) {
-                    if (this._fileInfo.isStubFile || isPrivateName(name)) {
+                    if (this._fileInfo.isStubFile) {
+                        if (this._currentScope.type === ScopeType.Module) {
+                            this._potentialPrivateSymbols.set(name, symbol);
+                        } else {
+                            symbol.setIsExternallyHidden();
+                        }
+                    } else if (isPrivateName(name)) {
                         symbol.setIsExternallyHidden();
                     } else if (this._fileInfo.isInPyTypedPackage && this._currentScope.type === ScopeType.Module) {
                         this._potentialPrivateSymbols.set(name, symbol);
