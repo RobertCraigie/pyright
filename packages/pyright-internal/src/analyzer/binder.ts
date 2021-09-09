@@ -1449,7 +1449,7 @@ export class Binder extends ParseTreeWalker {
                     // considered "reexported" from a type stub file unless
                     // they are imported using the "as" form and the aliased
                     // name is entirely redundant.
-                    symbol.setIsExternallyHidden();
+                    this._potentialPrivateSymbols.set(symbolName, symbol);
                 } else if (this._fileInfo.isInPyTypedPackage && this._currentScope.type === ScopeType.Module) {
                     this._potentialPrivateSymbols.set(symbolName, symbol);
                 }
@@ -1611,7 +1611,7 @@ export class Binder extends ParseTreeWalker {
                                 // PEP 484 indicates that imported symbols should not be
                                 // considered "reexported" from a type stub file unless
                                 // they are imported using the "as" form using a redundant form.
-                                symbol.setIsExternallyHidden();
+                                this._potentialPrivateSymbols.set(nameNode.value, symbol);
                             } else if (
                                 this._fileInfo.isInPyTypedPackage &&
                                 this._currentScope.type === ScopeType.Module
@@ -2955,14 +2955,15 @@ export class Binder extends ParseTreeWalker {
                 }
 
                 if (isPrivateOrProtectedName(name)) {
-                    if (this._fileInfo.isStubFile) {
+                    if (isPrivateName(name)) {
+                        // Private names are mangled, so they are always externally hidden.
+                        symbol.setIsExternallyHidden();
+                    } else if (this._fileInfo.isStubFile) {
                         if (this._currentScope.type === ScopeType.Module) {
                             this._potentialPrivateSymbols.set(name, symbol);
                         } else {
                             symbol.setIsExternallyHidden();
                         }
-                    } else if (isPrivateName(name)) {
-                        symbol.setIsExternallyHidden();
                     } else if (this._fileInfo.isInPyTypedPackage && this._currentScope.type === ScopeType.Module) {
                         this._potentialPrivateSymbols.set(name, symbol);
                     }

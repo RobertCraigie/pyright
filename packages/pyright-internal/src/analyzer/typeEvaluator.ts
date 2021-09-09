@@ -4816,7 +4816,7 @@ export function createTypeEvaluator(
                         addDiagnostic(
                             getFileInfo(node).diagnosticRuleSet.reportGeneralTypeIssues,
                             DiagnosticRule.reportGeneralTypeIssues,
-                            Localizer.Diagnostic.privateModuleMember().format({
+                            Localizer.Diagnostic.privateModuleSymbol().format({
                                 name: memberName,
                             }),
                             node.memberName
@@ -16641,9 +16641,35 @@ export function createTypeEvaluator(
 
         assert(aliasDecl.type === DeclarationType.Alias);
 
-        const resolvedDecl = resolveAliasDeclaration(aliasDecl, /* resolveLocalNames */ true);
+        // Try to resolve the alias while honoring external visibility.
+        let resolvedDecl = resolveAliasDeclaration(
+            aliasDecl,
+            /* resolveLocalNames */ true,
+            /* honorExternalVisibility */ true
+        );
+
         if (!resolvedDecl) {
-            return resolvedDecl;
+            // Try again with honorExternalVisibility false.
+            resolvedDecl = resolveAliasDeclaration(
+                aliasDecl,
+                /* resolveLocalNames */ true,
+                /* honorExternalVisibility */ false
+            );
+
+            if (!resolvedDecl) {
+                return undefined;
+            }
+
+            if (node.nodeType === ParseNodeType.ImportFromAs) {
+                addDiagnostic(
+                    getFileInfo(node).diagnosticRuleSet.reportGeneralTypeIssues,
+                    DiagnosticRule.reportGeneralTypeIssues,
+                    Localizer.Diagnostic.privateModuleSymbol().format({
+                        name: node.name.value,
+                    }),
+                    node.name
+                );
+            }
         }
 
         return getInferredTypeOfDeclaration(aliasDecl);
@@ -20263,8 +20289,17 @@ export function createTypeEvaluator(
     // associated with that symbol. It does this recursively if necessary. If a symbol
     // lookup fails, undefined is returned. If resolveLocalNames is true, the method
     // resolves aliases through local renames ("as" clauses found in import statements).
-    function resolveAliasDeclaration(declaration: Declaration, resolveLocalNames: boolean): Declaration | undefined {
-        return DeclarationUtils.resolveAliasDeclaration(importLookup, declaration, resolveLocalNames);
+    function resolveAliasDeclaration(
+        declaration: Declaration,
+        resolveLocalNames: boolean,
+        honorExternalVisibility = false
+    ): Declaration | undefined {
+        return DeclarationUtils.resolveAliasDeclaration(
+            importLookup,
+            declaration,
+            resolveLocalNames,
+            honorExternalVisibility
+        );
     }
 
     // Returns the type of the symbol. If the type is explicitly declared, that type

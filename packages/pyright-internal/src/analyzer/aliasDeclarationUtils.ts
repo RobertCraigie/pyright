@@ -15,10 +15,14 @@ import { Symbol } from './symbol';
 // associated with that symbol. It does this recursively if necessary. If a symbol
 // lookup fails, undefined is returned. If resolveLocalNames is true, the method
 // resolves aliases through local renames ("as" clauses found in import statements).
+// If honorExternalVisibility is true, the function returns undefined if a symbol
+// is resolved but is considered "private" (not externally visible) for the
+// exporting module.
 export function resolveAliasDeclaration(
     importLookup: ImportLookup,
     declaration: Declaration,
-    resolveLocalNames: boolean
+    resolveLocalNames: boolean,
+    honorExternalVisibility: boolean
 ): Declaration | undefined {
     let curDeclaration: Declaration | undefined = declaration;
     const alreadyVisited: Declaration[] = [];
@@ -48,8 +52,17 @@ export function resolveAliasDeclaration(
             : undefined;
         if (!symbol) {
             if (curDeclaration.submoduleFallback) {
-                return resolveAliasDeclaration(importLookup, curDeclaration.submoduleFallback, resolveLocalNames);
+                return resolveAliasDeclaration(
+                    importLookup,
+                    curDeclaration.submoduleFallback,
+                    resolveLocalNames,
+                    honorExternalVisibility
+                );
             }
+            return undefined;
+        }
+
+        if (symbol.isExternallyHidden() && honorExternalVisibility) {
             return undefined;
         }
 
@@ -80,7 +93,12 @@ export function resolveAliasDeclaration(
                 curDeclaration.type === DeclarationType.Alias &&
                 curDeclaration.submoduleFallback
             ) {
-                return resolveAliasDeclaration(importLookup, curDeclaration.submoduleFallback, resolveLocalNames);
+                return resolveAliasDeclaration(
+                    importLookup,
+                    curDeclaration.submoduleFallback,
+                    resolveLocalNames,
+                    honorExternalVisibility
+                );
             }
             return declaration;
         }

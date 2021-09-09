@@ -569,8 +569,8 @@ export namespace Localizer {
         export const positionOnlyAfterKeywordOnly = () => getRawString('Diagnostic.positionOnlyAfterKeywordOnly');
         export const positionOnlyIncompatible = () => getRawString('Diagnostic.positionOnlyIncompatible');
         export const positionOnlyFirstParam = () => getRawString('Diagnostic.positionOnlyFirstParam');
-        export const privateModuleMember = () =>
-            new ParameterizedString<{ name: string }>(getRawString('Diagnostic.privateModuleMember'));
+        export const privateModuleSymbol = () =>
+            new ParameterizedString<{ name: string }>(getRawString('Diagnostic.privateModuleSymbol'));
         export const privateUsedOutsideOfClass = () =>
             new ParameterizedString<{ name: string }>(getRawString('Diagnostic.privateUsedOutsideOfClass'));
         export const privateUsedOutsideOfModule = () =>
